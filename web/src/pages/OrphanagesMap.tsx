@@ -10,14 +10,18 @@ import "../styles/pages/orphanages-map.css";
 import api from "../services/api";
 
 interface Orphanage {
-    id: number;
-    latitude: number;
-    longitude: number;
-    name: string;
+  id: number;
+  latitude: number;
+  longitude: number;
+  name: string;
 }
 
 function OrphanagesMap() {
   const [orphanages, setOrphanages] = useState<Orphanage[]>([]);
+  const [currentPosition, setCurrentPosition] = useState({
+    latitude: 0,
+    longitude: 0,
+  });
 
   useEffect(() => {
     api.get("orphanages").then((response) => {
@@ -25,6 +29,28 @@ function OrphanagesMap() {
     });
   }, []);
 
+  useEffect(() => {
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0,
+    };
+
+    function success(pos: any) {
+      const { latitude, longitude } = pos.coords;
+
+      console.log(latitude);
+      console.log(longitude);
+
+      setCurrentPosition({latitude, longitude})
+    }
+
+    function error(err: any) {
+      console.warn("ERROR(" + err.code + "): " + err.message);
+    }
+
+    navigator.geolocation.getCurrentPosition(success, error, options);
+  }, []);
   return (
     <div id="page-map">
       <aside>
@@ -42,7 +68,7 @@ function OrphanagesMap() {
       </aside>
 
       <Map
-        center={[-15.8486923, -48.0691532]}
+        center={[currentPosition.latitude, currentPosition.longitude]}
         zoom={15}
         style={{ width: "100%", height: "100%" }}
       >
@@ -51,13 +77,18 @@ function OrphanagesMap() {
 
         {orphanages.map((orphanage) => {
           return (
-            <Marker icon={mapIcon} position={[orphanage.latitude, orphanage.longitude]} key={orphanage.id}>
+            <Marker
+              icon={mapIcon}
+              position={[orphanage.latitude, orphanage.longitude]}
+              key={orphanage.id}
+            >
               <Popup
                 closeButton={false}
                 minWidth={240}
                 maxWidth={240}
-                className="map-popup">
-                    {orphanage.name}
+                className="map-popup"
+              >
+                {orphanage.name}
                 <Link to={`/orphanages/${orphanage.id}`}>
                   <FiArrowRight size={20} color="#FFF" />
                 </Link>

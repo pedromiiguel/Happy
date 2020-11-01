@@ -1,17 +1,16 @@
-import React, { FormEvent, useState, ChangeEvent } from "react";
+import React, { FormEvent, useState, ChangeEvent, useEffect } from "react";
 import { Map, Marker, TileLayer } from "react-leaflet";
 import { LeafletMouseEvent } from "leaflet";
 import { FiPlus } from "react-icons/fi";
-import { useHistory } from "react-router-dom";
+import { Redirect } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
-
 import mapIcon from "../utils/mapIcon";
 import "../styles/pages/create-orphanage.css";
 import api from "../services/api";
 
+
 export default function CreateOrphanage() {
 
-  const history = useHistory();
 
   const [position, setPosition] = useState({ latitude: 0, longitude: 0 });
   const [name, setName] = useState("");
@@ -21,6 +20,35 @@ export default function CreateOrphanage() {
   const [open_on_weekends, setOpenOnWeekends] = useState(true);
   const [ images, setImages ] = useState<File[]>([]);
   const [previewImages, setPreviewImages] = useState<string[]>([])
+  const [currentPosition, setCurrentPosition] = useState({
+    latitude: 0,
+    longitude: 0,
+  });
+
+ 
+
+  useEffect(() => {
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0,
+    };
+
+    function success(pos: any) {
+      const { latitude, longitude } = pos.coords;
+
+      console.log(latitude);
+      console.log(longitude);
+
+      setCurrentPosition({latitude, longitude})
+    }
+
+    function error(err: any) {
+      console.warn("ERROR(" + err.code + "): " + err.message);
+    }
+
+    navigator.geolocation.getCurrentPosition(success, error, options);
+  }, []);
 
   function handleMapClick(event: LeafletMouseEvent) {
     const { lat, lng } = event.latlng;
@@ -63,12 +91,12 @@ export default function CreateOrphanage() {
       data.append('images', image)
     })
 
-   await api.post('/orphanages', data);
-
-   alert('Cadastro realizado com sucesso!')
-
-   history.push('/app');
+      await api.post('/orphanages', data);
+      return (<Redirect to="/registration/completed"/>)
+     
    
+
+
   }
 
   return (
@@ -81,7 +109,7 @@ export default function CreateOrphanage() {
             <legend>Dados</legend>
 
             <Map
-              center={[-15.8486923, -48.0691532]}
+              center={[currentPosition.latitude, currentPosition.longitude]}
               style={{ width: "100%", height: 280 }}
               zoom={15}
               onclick={handleMapClick}
